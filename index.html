@@ -8,52 +8,81 @@
   <h2>Lưu dữ liệu JSON lên GitHub</h2>
   <input id="name" placeholder="Nhập tên">
   <input id="score" placeholder="Nhập điểm">
-  <button onclick="saveData()">Lưu</button>
+  <button id="btnSave">Lưu</button>
 
   <pre id="result"></pre>
 
   <script>
-    async function saveData() {
-      const user = "GithupIQ1000";
-      const repo = "English";
-      const path = "english_data.json"; // tên file trong repo
-      const token = "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"; // Dán token vào đây
+    document.getElementById('btnSave').addEventListener('click', saveData);
 
-      // Dữ liệu muốn lưu
+    async function saveData() {
+      const user = "GithupIQ1000";          // đổi thành tài khoản bạn
+      const repo = "English";               // đổi thành repo bạn
+      const path = "english_data.json";     // file trong repo
+      const token = "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";      // **KHÔNG** đặt token thật trong repo công khai
+
+      // Lấy dữ liệu từ form
       const newData = {
-        name: document.getElementById("name").value,
-        score: document.getElementById("score").value
+        name: document.getElementById('name').value || "",
+        score: document.getElementById('score').value || ""
       };
 
-      // 1️⃣ Lấy SHA của file hiện có (để cập nhật)
-      const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
-        headers: { Authorization: `token ${token}` }
-      });
-      const json = await res.json();
+      const resultEl = document.getElementById('result');
 
-      // 2️⃣ Gộp dữ liệu mới với dữ liệu cũ (nếu có)
-      let oldData = [];
-      if (json.content) {
-        oldData = JSON.parse(atob(json.content));
+      try {
+        // 1) Lấy file nếu tồn tại
+        const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
+          headers: { Authorization: `token ${token}` }
+        });
+
+        let oldData = [];
+        let sha = null;
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.content) {
+            oldData = JSON.parse(atob(json.content));
+            sha = json.sha;
+          }
+        } else if (res.status === 404) {
+          // file chưa tồn tại, tiếp tục để tạo mới
+          console.log("File chưa tồn tại, sẽ tạo mới.");
+        } else if (res.status === 401) {
+          const err = await res.json().catch(()=>({message: "Unauthorized"}));
+          throw new Error("401 Unauthorized: " + (err.message || res.status));
+        } else {
+          const err = await res.json().catch(()=>({message: "Unknown error"}));
+          throw new Error("Lỗi khi lấy file: " + res.status + " - " + (err.message || ""));
+        }
+
+        // 2) Gộp dữ liệu mới
+        oldData.push(newData);
+
+        // 3) Ghi lên GitHub (PUT). Nếu sha=null thì GitHub sẽ hiểu là tạo mới.
+        const update = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `token ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: "Cập nhật dữ liệu từ web",
+            content: btoa(JSON.stringify(oldData, null, 2)),
+            ...(sha ? { sha } : {}) // chỉ gửi sha nếu có
+          })
+        });
+
+        const updateJson = await update.json();
+
+        if (!update.ok) {
+          throw new Error((updateJson && updateJson.message) || "Lỗi khi ghi file: " + update.status);
+        }
+
+        resultEl.textContent = "✅ Lưu thành công!\n" + JSON.stringify(updateJson, null, 2);
+      } catch (err) {
+        console.error(err);
+        resultEl.textContent = "❌ Lỗi: " + err.message;
       }
-      oldData.push(newData);
-
-      // 3️⃣ Ghi lại file
-      const update = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `token ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: "Cập nhật dữ liệu từ web",
-          content: btoa(JSON.stringify(oldData, null, 2)),
-          sha: json.sha
-        })
-      });
-
-      const result = await update.json();
-      document.getElementById("result").textContent = JSON.stringify(result, null, 2);
     }
   </script>
 </body>
