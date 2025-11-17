@@ -11,6 +11,9 @@
   <button onclick="debugShowAllWords()">Show dữ liệu</button>
   <div id="import-result" style="margin-top:10px;color:green;font-weight:bold"></div>
 
+  <div id="debug-output" 
+       style="white-space:pre-wrap; padding:10px; border:1px solid #000; margin-top:20px;">
+  </div>
 <script>
 let db;   // 👈 PHẢI CÓ
 
@@ -155,8 +158,46 @@ function debugShowAllWords() {
     const store = tx.objectStore("words");
 
     const req = store.getAll();
+
     req.onsuccess = function () {
-        console.log("Dữ liệu IndexedDB:", req.result);
+        const data = req.result;
+
+        if (data.length === 0) {
+            document.getElementById("debug-output").innerHTML =
+                "<b>IndexedDB trống!</b>";
+            return;
+        }
+
+        let html = `
+            <table border="1" cellpadding="5" style="border-collapse:collapse; width:100%;">
+                <tr style="background:#eee;">
+                    <th>Word</th>
+                    <th>Type</th>
+                    <th>Mean</th>
+                    <th>Reading Point</th>
+                    <th>Speaking Point</th>
+                    <th>Next Reading</th>
+                    <th>Next Speaking</th>
+                </tr>
+        `;
+
+        data.forEach(item => {
+            html += `
+                <tr>
+                    <td>${item.word}</td>
+                    <td>${item.type}</td>
+                    <td>${item.mean}</td>
+                    <td>${item.sum_point_reading}</td>
+                    <td>${item.sum_point_speaking}</td>
+                    <td>${item.next_reading_time}</td>
+                    <td>${item.next_speaking_time}</td>
+                </tr>
+            `;
+        });
+
+        html += "</table>";
+
+        document.getElementById("debug-output").innerHTML = html;
     };
 }
 </script>
