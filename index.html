@@ -172,7 +172,7 @@ function takeVocabulary() {
 ============================================================ */
 function nextWord() {
 
-    count++;  // FIXED — không nhảy 200 dòng nữa
+    count+=50;  // FIXED — không nhảy 200 dòng nữa
 
     if (count >= end_count) {
         count = end_count;
@@ -278,6 +278,93 @@ function mark(status) {
     if (status === 0) s.style.color = "red";
 
     if (status === 1) setTimeout(nextWord, 800);
+}
+
+
+function saveVocabulary() {
+
+    const type = "reading";   // bạn đang dùng next_reading_time + sum_point_reading
+
+    // Setting của user (PHP lấy từ DB)
+    // → JS phải tự cố định hoặc load từ file cấu hình
+    // Bạn có thể thay bằng UI tùy chỉnh
+    const setting = {
+        point_jump_word: 2.5,
+        point_jump_meaning: 2.5,
+        point_jump_reading: 2.5,
+        Nx_points: 1.7
+    };
+
+    const updatedList = [];
+
+    words.forEach(w => {
+
+        // status = -1 → bỏ qua
+        if (w.status === -1) return;
+
+        const date = new Date();
+        let point = Number(w.sum_point_reading);
+
+        let Bonus_point = 0;
+
+        /* ======= CASE ĐÚNG (status = 1) ======= */
+        if (w.status === 1) {
+
+            Bonus_point =
+                setting.point_jump_reading +
+                Math.round(point / 5.9 * 100) / 100 +
+                (Math.floor(Math.random() * 19) - 9) / 100;   // rand(-9,9)/100
+
+            point += Bonus_point;
+
+            if (w.Nx_points && point < 45) {
+                point = Math.round(point * setting.Nx_points * 100) / 100;
+            } else if (w.Nx_points) {
+                point += Math.round((point / 6 * setting.Nx_points) * 100) / 100;
+            }
+
+            const addDays = Math.floor(point);
+            date.setDate(date.getDate() + addDays);
+        }
+
+        /* ======= CASE SAI (status = 0) ======= */
+        else if (w.status === 0) {
+
+            point = Math.round(point * 2 / 3 * 100) / 100;
+
+            if (w.Nx_points) {
+                point = Math.round((point / setting.Nx_points) * 100) / 100;
+            }
+
+            const addDays = Math.floor(point / 2);
+            date.setDate(date.getDate() + addDays);
+        }
+
+        // Lưu lại để đưa vào IndexedDB
+        updatedList.push({
+            key: w.key,
+            word: w.word,
+            type: w.type,
+            mean: w.mean,
+            sum_point_reading: point,
+            next_reading_time: date.toISOString().slice(0, 10)
+        });
+    });
+
+
+    /* ============================================================
+       SAVE TO INDEXEDDB
+    ============================================================ */
+
+    const tx = db.transaction("words", "readwrite");
+    const store = tx.objectStore("words");
+
+    updatedList.forEach(w => store.put(w));
+
+    tx.oncomplete = function () {
+        alert("Cập nhật thành công!");
+        location.reload();
+    };
 }
 
 
