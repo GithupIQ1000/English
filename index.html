@@ -28,9 +28,10 @@ request.onupgradeneeded = function (e) {
             keyPath: "key"
         });
 
-        store.createIndex("word", "word", { unique: false });
-        store.createIndex("type", "type", { unique: false });
-        store.createIndex("mean", "mean", { unique: false });
+        store.createIndex("word", "word");
+        store.createIndex("type", "type");
+        store.createIndex("mean", "mean");
+        store.createIndex("next_reading_time", "next_reading_time")
     }
 };
 
@@ -44,6 +45,18 @@ request.onerror = function (e) {
     console.error("IndexedDB Error:", e);
 };
 
+
+
+// =========================================
+// LẤY NGÀY HIỆN TẠI (YYYY-MM-DD)
+// =========================================
+function today() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
 
 
 // -----------------------------
@@ -130,10 +143,8 @@ function addWord(word, type, mean) {
     const tx = db.transaction("words", "readwrite");
     const store = tx.objectStore("words");
 
-    const now = new Date();
-    const isoDate =
-        `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
+    const isoDate = today();
+        
     const record = {
         key: `${word}|${type}|${mean}`,
         word: word,
@@ -148,6 +159,206 @@ function addWord(word, type, mean) {
     store.add(record);
 }
 
+
+// =========================================
+// OPEN DATABASE
+// =========================================
+let db;
+
+const request = indexedDB.open("MyDB", 1);
+
+request.onupgradeneeded = function (e) {
+    const db = e.target.result;
+
+    if (!db.objectStoreNames.contains("words")) {
+        const store = db.createObjectStore("words", { keyPath: "key" });
+
+        store.createIndex("word", "word");
+        store.createIndex("type", "type");
+        store.createIndex("mean", "mean");
+        store.createIndex("next_reading_time", "next_reading_time");
+    }
+};
+
+request.onsuccess = function (e) {
+    db = e.target.result;
+    loadWordsForToday();
+};
+
+request.onerror = function () {
+    alert("Lỗi mở IndexedDB");
+};
+
+
+
+// =========================================
+// TẢI TOÀN BỘ WORDS → LỌC THEO next_reading_time
+// =========================================
+let words = [];
+let count = -1;  
+let end_count = 0;
+
+function loadWordsForToday() {
+    const tx = db.transaction("words", "readonly");
+    const store = tx.objectStore("words");
+    const req = store.getAll();
+
+    req.onsuccess = function () {
+        const all = req.result;
+
+        const todayDate = today();
+
+        // LỌC: today >= next_reading_time
+        words = all.filter(w => todayDate >= w.next_reading_time);
+        words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);
+        callback(words);
+        if (words.length === 0) {
+            document.getElementById("word").innerHTML =
+                "Hôm nay không có readings nào.";
+            document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
+            return;
+        }
+
+        end_count = words.length;
+        count = -1;
+        nextWord();
+    };
+}
+
+
+// =========================================
+// NEXT WORD
+// =========================================
+function nextWord() {
+    count++;
+
+    if (count >= end_count) {
+        count = end_count;
+
+        document.getElementById("word").innerHTML =
+            "Bạn đã hoàn thành readings ngày hôm nay.";
+
+        document.getElementById("answer").innerHTML = "";
+        document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
+
+        return;
+    }
+
+    if (words[count].status === undefined) {
+        words[count].status = -1;
+    }
+
+    showWord();
+}
+
+
+// =========================================
+// BACK WORD
+// =========================================
+function backWord() {
+    count--;
+
+    if (count < 0) {
+        count = 0;
+    }
+
+    showWord();
+}
+
+
+// =========================================
+// HIỆN WORD
+// =========================================
+function showWord() {
+    const w = words[count];
+
+    let color = "black";
+    if (w.status === 1) color = "green";
+    if (w.status === 0) color = "red";
+
+    document.getElementById("word").innerHTML = `
+        <div id="sentence" style="color:${color}; font-size:35px;">
+            ${w.word}
+        </div>
+        <button onclick="answer()">Answer</button>
+    `;
+
+    if (w.status === -1) {
+        document.getElementById("answer").innerHTML =
+            `<button onclick="markNx()">x N_point</button>`;
+    } else {
+        showFullCard();
+    }
+}
+
+
+// =========================================
+// TRẢ LỜI → HIỆN TYPE → HIỆN ĐẦY ĐỦ
+// =========================================
+function answer() {
+    const w = words[count];
+
+    const short = `<div>( ${w.type} )</div>`;
+
+    const ansBox = document.getElementById("answer");
+
+    if (ansBox.innerHTML.trim() === "" ||
+        ansBox.innerHTML.includes("x N_point")) {
+        ansBox.innerHTML = short;
+        return;
+    }
+
+    if (ansBox.innerHTML.trim() === short.trim()) {
+        showFullCard();
+        return;
+    }
+
+    ansBox.innerHTML = "";
+}
+
+
+// =========================================
+// HIỆN THẺ ĐẦY ĐỦ + OK / FORGET
+// =========================================
+function showFullCard() {
+    const w = words[count];
+
+    document.getElementById("answer").innerHTML = `
+        <div>
+            <div>${w.word}</div>
+            <div>${w.word} (${w.type}): ${w.mean}</div>
+        </div>
+        <div>
+            <button onclick="mark(1)">Ok</button>
+            <button onclick="mark(0)">Forget</button>
+        </div>
+    `;
+}
+
+
+// =========================================
+// X N_POINT
+// =========================================
+function markNx() {
+    words[count].Nx_points = 1;
+    document.getElementById("answer").innerHTML = "";
+}
+
+
+// =========================================
+// MARK OK / FORGET
+// =========================================
+function mark(status) {
+    const w = words[count];
+    w.status = status;
+
+    if (status === 1) document.getElementById("sentence").style.color = "green";
+    if (status === 0) document.getElementById("sentence").style.color = "red";
+
+    if (status === 1) {
+        setTimeout(nextWord, 800);
+    }
+}
 
 
 // -----------------------------
