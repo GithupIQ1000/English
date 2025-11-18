@@ -11,6 +11,23 @@
   <button onclick="debugShowAllWords()">Show dữ liệu</button>
   <div id="import-result" style="margin-top:10px;color:green;font-weight:bold"></div>
 
+
+
+<div style="display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; height: 100vh;">
+    <div id="word"></div>
+    <div id="answer"></div>
+
+    <div style="display: flex; gap: 10px;">
+        <button class="learn" onclick="nextWord()">Next</button>
+        <button class="learn" onclick="backWord()">Back</button>
+    </div>
+
+    <button onclick="if(confirm('Bạn có chắc muốn về trang chủ?')) location.href='index.html';">
+        Quay lại
+    </button>
+</div>
+
+
   <div id="debug-output" 
        style="white-space:pre-wrap; padding:10px; border:1px solid #000; margin-top:20px;">
   </div>
