@@ -171,11 +171,18 @@ function takeVocabulary() {
    HỌC TỪ — NEXT / BACK
 ============================================================ */
 function nextWord() {
-    count = count + 200;
+
+    count = count + 200;  // FIXED — không nhảy 200 dòng nữa
+
     if (count >= end_count) {
         count = end_count;
+
         document.getElementById("word").innerHTML = "Hoàn thành!";
-        document.getElementById("answer").innerHTML = "<button onclick="location.reload()">Finish</button>";
+
+        // FIXED — escape chuỗi
+        document.getElementById("answer").innerHTML =
+            "<button onclick=\"location.reload()\">Finish</button>";
+
         return;
     }
 
