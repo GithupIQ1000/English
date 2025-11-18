@@ -2,193 +2,50 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Ghi dữ liệu vào GitHub</title>
+  <title>Vocabulary Offline</title>
 </head>
 <body>
-  <h3>Upload JSON dữ liệu từ MySQL</h3>
-  <input type="file" id="jsonFile" accept=".json">
-  <button onclick="importJSON()">Nhập dữ liệu</button>
-  <button onclick="debugShowAllWords()">Show dữ liệu</button>
-  <div id="import-result" style="margin-top:10px;color:green;font-weight:bold"></div>
 
+<h3>Upload JSON dữ liệu từ MySQL</h3>
+<input type="file" id="jsonFile" accept=".json">
+<button onclick="importJSON()">Nhập dữ liệu</button>
+<button onclick="debugShowAllWords()">Show dữ liệu</button>
 
+<div id="import-result" style="margin-top:10px;color:green;font-weight:bold"></div>
 
-<div style="display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; height: 100vh;">
+<hr>
+
+<!-- HỌC TỪ -->
+<div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
     <div id="word"></div>
     <div id="answer"></div>
 
-    <div style="display: flex; gap: 10px;">
+    <div style="display:flex; gap:10px;">
         <button class="learn" onclick="nextWord()">Next</button>
         <button class="learn" onclick="backWord()">Back</button>
     </div>
 
-    <button onclick="if(confirm('Bạn có chắc muốn về trang chủ?')) location.href='index.html';">
-        Quay lại
-    </button>
+    <button onclick="location.reload()">Quay lại</button>
 </div>
 
+<hr>
 
-  <div id="debug-output" 
-       style="white-space:pre-wrap; padding:10px; border:1px solid #000; margin-top:20px;">
-  </div>
+<div id="debug-output" style="white-space:pre-wrap;"></div>
+
+
 <script>
-let db;   // 👈 PHẢI CÓ
-
-const request = indexedDB.open("MyDB", 1);
-
-request.onupgradeneeded = function (e) {
-    const db = e.target.result;
-
-    // Tạo objectStore nếu chưa tồn tại
-    if (!db.objectStoreNames.contains("words")) {
-        const store = db.createObjectStore("words", {
-            keyPath: "key"
-        });
-
-        store.createIndex("word", "word");
-        store.createIndex("type", "type");
-        store.createIndex("mean", "mean");
-        store.createIndex("next_reading_time", "next_reading_time")
-    }
-};
-
-request.onsuccess = function (e) {
-    db = e.target.result;
-    console.log("IndexedDB Ready");
-    debugShowAllWords();
-};
-
-request.onerror = function (e) {
-    console.error("IndexedDB Error:", e);
-};
-
-
-
-// =========================================
-// LẤY NGÀY HIỆN TẠI (YYYY-MM-DD)
-// =========================================
-function today() {
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-
-
-// -----------------------------
-// IMPORT JSON
-// -----------------------------
-function importJSON() {
-    const fileInput = document.getElementById("jsonFile");
-    if (fileInput.files.length === 0) {
-        alert("Chọn file JSON trước");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = function (e) {
-        try {
-            const data = JSON.parse(e.target.result);
-
-            const tableObj = data.find(
-                item => item.type === "table" && item.name === "words"
-            );
-
-            if (!tableObj) {
-                alert("Không tìm thấy bảng words trong JSON!");
-                return;
-            }
-
-            saveWordsToIndexedDB(tableObj.data);
-
-        } catch (err) {
-            console.error(err);
-            alert("File JSON không hợp lệ!");
-        }
-    };
-
-    reader.readAsText(file);
-}
-
-
-
-// -----------------------------
-// SAVE DATA FROM JSON
-// -----------------------------
-function saveWordsToIndexedDB(words) {
-    const tx = db.transaction("words", "readwrite");
-    const store = tx.objectStore("words");
-
-    let count = 0;
-
-    words.forEach(w => {
-        const key = `${w.word}|${w.type}|${w.mean}`;
-
-        const item = {
-            key: key,
-            word: w.word,
-            type: w.type,
-            mean: w.mean,
-
-            sum_point_reading: Number(w.sum_point_reading || 0),
-            sum_point_speaking: Number(w.sum_point_speaking || 0),
-
-            next_reading_time: w.next_reading_time,
-            next_speaking_time: w.next_speaking_time
-        };
-
-        store.put(item);
-        count++;
-    });
-
-    tx.oncomplete = function () {
-        document.getElementById("import-result").innerText =
-            `Đã nhập ${count} từ vào IndexedDB!`;
-    };
-}
-
-
-
-// -----------------------------
-// ADD NEW WORD MANUALLY
-// -----------------------------
-function addWord(word, type, mean) {
-
-    const tx = db.transaction("words", "readwrite");
-    const store = tx.objectStore("words");
-
-    const isoDate = today();
-        
-    const record = {
-        key: `${word}|${type}|${mean}`,
-        word: word,
-        type: type,
-        mean: mean,
-        sum_point_reading: 0,
-        sum_point_speaking: 0,
-        next_reading_time: isoDate,
-        next_speaking_time: isoDate
-    };
-
-    store.add(record);
-}
-
-
-// =========================================
-// OPEN DATABASE
-// =========================================
+/* ============================================================
+   KHỞI TẠO INDEXEDDB
+============================================================ */
 let db;
 
 const request = indexedDB.open("MyDB", 1);
 
 request.onupgradeneeded = function (e) {
-    const db = e.target.result;
+    const database = e.target.result;
 
-    if (!db.objectStoreNames.contains("words")) {
-        const store = db.createObjectStore("words", { keyPath: "key" });
+    if (!database.objectStoreNames.contains("words")) {
+        const store = database.createObjectStore("words", { keyPath: "key" });
 
         store.createIndex("word", "word");
         store.createIndex("type", "type");
@@ -199,6 +56,8 @@ request.onupgradeneeded = function (e) {
 
 request.onsuccess = function (e) {
     db = e.target.result;
+    console.log("IndexedDB Ready");
+
     loadWordsForToday();
 };
 
@@ -207,85 +66,136 @@ request.onerror = function () {
 };
 
 
+/* ============================================================
+   HÀM LẤY NGÀY (YYYY-MM-DD)
+============================================================ */
+function today() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
-// =========================================
-// TẢI TOÀN BỘ WORDS → LỌC THEO next_reading_time
-// =========================================
+
+/* ============================================================
+   IMPORT JSON
+============================================================ */
+function importJSON() {
+    const file = document.getElementById("jsonFile").files[0];
+    if (!file) return alert("Chọn file trước!");
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+
+            const tableObj = data.find(item =>
+                item.type === "table" && item.name === "words"
+            );
+
+            if (!tableObj) return alert("Không tìm thấy bảng words!");
+
+            saveWordsToIndexedDB(tableObj.data);
+
+        } catch (err) {
+            alert("JSON lỗi!");
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+
+/* ============================================================
+   LƯU DỮ LIỆU JSON VÀO INDEXEDDB
+============================================================ */
+function saveWordsToIndexedDB(words) {
+    const tx = db.transaction("words", "readwrite");
+    const store = tx.objectStore("words");
+
+    let count = 0;
+
+    words.forEach(w => {
+        const key = `${w.word}|${w.type}|${w.mean}`;
+
+        store.put({
+            key: key,
+            word: w.word,
+            type: w.type,
+            mean: w.mean,
+            sum_point_reading: Number(w.sum_point_reading || 0),
+            sum_point_speaking: Number(w.sum_point_speaking || 0),
+            next_reading_time: w.next_reading_time,
+            next_speaking_time: w.next_speaking_time
+        });
+
+        count++;
+    });
+
+    tx.oncomplete = () => {
+        document.getElementById("import-result").innerText =
+            `Đã nhập ${count} từ thành công!`;
+    };
+}
+
+
+/* ============================================================
+   LOAD WORD HÔM NAY
+============================================================ */
 let words = [];
-let count = -1;  
+let count = -1;
 let end_count = 0;
 
 function loadWordsForToday() {
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
-    const req = store.getAll();
 
-    req.onsuccess = function () {
-        const all = req.result;
-
+    store.getAll().onsuccess = function (e) {
+        const all = e.target.result;
         const todayDate = today();
 
-        // LỌC: today >= next_reading_time
         words = all.filter(w => todayDate >= w.next_reading_time);
         words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);
-        callback(words);
+
+        end_count = words.length;
+        count = -1;
+
         if (words.length === 0) {
-            document.getElementById("word").innerHTML =
-                "Hôm nay không có readings nào.";
+            document.getElementById("word").innerHTML = "Hôm nay không có bài.";
             document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
             return;
         }
 
-        end_count = words.length;
-        count = -1;
         nextWord();
     };
 }
 
 
-// =========================================
-// NEXT WORD
-// =========================================
+/* ============================================================
+   HỌC TỪ — NEXT / BACK
+============================================================ */
 function nextWord() {
     count++;
-
     if (count >= end_count) {
-        count = end_count;
-
-        document.getElementById("word").innerHTML =
-            "Bạn đã hoàn thành readings ngày hôm nay.";
-
+        document.getElementById("word").innerHTML = "Hoàn thành!";
         document.getElementById("answer").innerHTML = "";
         document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
-
         return;
     }
 
-    if (words[count].status === undefined) {
-        words[count].status = -1;
-    }
+    if (words[count].status === undefined) words[count].status = -1;
 
     showWord();
 }
 
-
-// =========================================
-// BACK WORD
-// =========================================
 function backWord() {
     count--;
-
-    if (count < 0) {
-        count = 0;
-    }
-
+    if (count < 0) count = 0;
     showWord();
 }
 
 
-// =========================================
-// HIỆN WORD
-// =========================================
+/* ============================================================
+   HIỂN THỊ 1 TỪ
+============================================================ */
 function showWord() {
     const w = words[count];
 
@@ -294,7 +204,7 @@ function showWord() {
     if (w.status === 0) color = "red";
 
     document.getElementById("word").innerHTML = `
-        <div id="sentence" style="color:${color}; font-size:35px;">
+        <div id="sentence" style="font-size:35px;color:${color};">
             ${w.word}
         </div>
         <button onclick="answer()">Answer</button>
@@ -309,118 +219,85 @@ function showWord() {
 }
 
 
-// =========================================
-// TRẢ LỜI → HIỆN TYPE → HIỆN ĐẦY ĐỦ
-// =========================================
+/* ============================================================
+   SHOW TYPE → SHOW FULL
+============================================================ */
 function answer() {
     const w = words[count];
 
-    const short = `<div>( ${w.type} )</div>`;
+    const short = `<div>(${w.type})</div>`;
+    const box = document.getElementById("answer");
 
-    const ansBox = document.getElementById("answer");
-
-    if (ansBox.innerHTML.trim() === "" ||
-        ansBox.innerHTML.includes("x N_point")) {
-        ansBox.innerHTML = short;
+    if (box.innerHTML === "" || box.innerHTML.includes("x N_point")) {
+        box.innerHTML = short;
         return;
     }
 
-    if (ansBox.innerHTML.trim() === short.trim()) {
+    if (box.innerHTML.trim() === short.trim()) {
         showFullCard();
         return;
     }
 
-    ansBox.innerHTML = "";
+    box.innerHTML = "";
 }
 
 
-// =========================================
-// HIỆN THẺ ĐẦY ĐỦ + OK / FORGET
-// =========================================
+/* ============================================================
+   SHOW FULL CARD
+============================================================ */
 function showFullCard() {
     const w = words[count];
 
     document.getElementById("answer").innerHTML = `
-        <div>
-            <div>${w.word}</div>
-            <div>${w.word} (${w.type}): ${w.mean}</div>
-        </div>
-        <div>
-            <button onclick="mark(1)">Ok</button>
-            <button onclick="mark(0)">Forget</button>
-        </div>
+        <div>${w.word}</div>
+        <div>${w.word} (${w.type}): ${w.mean}</div>
+        <button onclick="mark(1)">Ok</button>
+        <button onclick="mark(0)">Forget</button>
     `;
 }
 
 
-// =========================================
-// X N_POINT
-// =========================================
+/* ============================================================
+   MARK
+============================================================ */
 function markNx() {
     words[count].Nx_points = 1;
     document.getElementById("answer").innerHTML = "";
 }
 
-
-// =========================================
-// MARK OK / FORGET
-// =========================================
 function mark(status) {
-    const w = words[count];
-    w.status = status;
+    words[count].status = status;
 
-    if (status === 1) document.getElementById("sentence").style.color = "green";
-    if (status === 0) document.getElementById("sentence").style.color = "red";
+    const s = document.getElementById("sentence");
+    if (status === 1) s.style.color = "green";
+    if (status === 0) s.style.color = "red";
 
-    if (status === 1) {
-        setTimeout(nextWord, 800);
-    }
+    if (status === 1) setTimeout(nextWord, 800);
 }
 
 
-// -----------------------------
-// DEBUG – SHOW ALL WORDS
-// -----------------------------
+/* ============================================================
+   DEBUG — SHOW ALL WORDS
+============================================================ */
 function debugShowAllWords() {
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
-    const req = store.getAll();
+    store.getAll().onsuccess = function (e) {
+        const list = e.target.result;
 
-    req.onsuccess = function () {
-        const data = req.result;
+        let html = "<table border=1 cellpadding=5><tr>" +
+            "<th>Word</th><th>Type</th><th>Mean</th>" +
+            "<th>Reading</th><th>Next Read</th></tr>";
 
-        if (data.length === 0) {
-            document.getElementById("debug-output").innerHTML =
-                "<b>IndexedDB trống!</b>";
-            return;
-        }
-
-        let html = `
-            <table border="1" cellpadding="5" style="border-collapse:collapse; width:100%;">
-                <tr style="background:#eee;">
-                    <th>Word</th>
-                    <th>Type</th>
-                    <th>Mean</th>
-                    <th>Reading Point</th>
-                    <th>Speaking Point</th>
-                    <th>Next Reading</th>
-                    <th>Next Speaking</th>
-                </tr>
-        `;
-
-        data.forEach(item => {
-            html += `
-                <tr>
-                    <td>${item.word}</td>
-                    <td>${item.type}</td>
-                    <td>${item.mean}</td>
-                    <td>${item.sum_point_reading}</td>
-                    <td>${item.sum_point_speaking}</td>
-                    <td>${item.next_reading_time}</td>
-                    <td>${item.next_speaking_time}</td>
-                </tr>
-            `;
+        list.forEach(w => {
+            html += `<tr>
+                        <td>${w.word}</td>
+                        <td>${w.type}</td>
+                        <td>${w.mean}</td>
+                        <td>${w.sum_point_reading}</td>
+                        <td>${w.next_reading_time}</td>
+                     </tr>`;
         });
 
         html += "</table>";
@@ -429,5 +306,6 @@ function debugShowAllWords() {
     };
 }
 </script>
+
 </body>
 </html>
