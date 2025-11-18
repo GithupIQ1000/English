@@ -24,8 +24,6 @@
         <button class="learn" onclick="nextWord()">Next</button>
         <button class="learn" onclick="backWord()">Back</button>
     </div>
-
-    <button onclick="location.reload()">Quay lại</button>
 </div>
 
 <hr>
@@ -177,8 +175,7 @@ function nextWord() {
     if (count >= end_count) {
         count = end_count;
         document.getElementById("word").innerHTML = "Hoàn thành!";
-        document.getElementById("answer").innerHTML = "";
-        document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
+        document.getElementById("answer").innerHTML = "<button onclick="location.reload()">Finish</button>";
         return;
     }
 
