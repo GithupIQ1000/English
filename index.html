@@ -58,7 +58,7 @@ request.onsuccess = function (e) {
     db = e.target.result;
     console.log("IndexedDB Ready");
 
-    loadWordsForToday();
+    takeVocabulary();
 };
 
 request.onerror = function () {
@@ -144,7 +144,7 @@ let words = [];
 let count = -1;
 let end_count = 0;
 
-function loadWordsForToday() {
+function takeVocabulary() {
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
@@ -175,6 +175,7 @@ function loadWordsForToday() {
 function nextWord() {
     count++;
     if (count >= end_count) {
+        count = end_count;
         document.getElementById("word").innerHTML = "Hoàn thành!";
         document.getElementById("answer").innerHTML = "";
         document.querySelectorAll(".learn").forEach(btn => btn.style.display = "none");
