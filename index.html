@@ -113,10 +113,7 @@ function saveWordsToIndexedDB(words) {
 
     words.forEach(w => {
         const key = `${w.word}|${w.type}|${w.mean}`;
-        if (w.host != "Long") {
-            count++;
-            continue;
-        }
+        if (w.host != "Long") {return;}
 
         store.put({
             key: key,
