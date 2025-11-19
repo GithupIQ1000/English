@@ -181,7 +181,7 @@ function nextWord() {
 
         // FIXED — escape chuỗi
         document.getElementById("answer").innerHTML =
-            "<button onclick=\"location.reload()\">Finish</button>";
+          "<button onclick=\"saveVocabulary()\">Finish</button>";
 
         return;
     }
@@ -289,10 +289,10 @@ function saveVocabulary() {
     // → JS phải tự cố định hoặc load từ file cấu hình
     // Bạn có thể thay bằng UI tùy chỉnh
     const setting = {
-        point_jump_word: 2.5,
-        point_jump_meaning: 2.5,
-        point_jump_reading: 2.5,
-        Nx_points: 1.7
+        point_jump_word: 1.5,
+        point_jump_meaning: 1.5,
+        point_jump_reading: 1.5,
+        Nx_points: 1.5
     };
 
     const updatedList = [];
@@ -371,7 +371,7 @@ function saveVocabulary() {
 /* ============================================================
    DEBUG — SHOW ALL WORDS
 ============================================================ */
-function debugShowAllWords() {
+function xdebugShowAllWords() {
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
