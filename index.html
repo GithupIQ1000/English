@@ -113,6 +113,10 @@ function saveWordsToIndexedDB(words) {
 
     words.forEach(w => {
         const key = `${w.word}|${w.type}|${w.mean}`;
+        if (w.host != "Long") {
+            count++;
+            continue;
+        }
 
         store.put({
             key: key,
@@ -372,6 +376,7 @@ function saveVocabulary() {
    DEBUG — SHOW ALL WORDS
 ============================================================ */
 function debugShowAllWords() {
+    deleteAllWords();
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
@@ -530,6 +535,28 @@ function deleteWord(key) {
         alert("Đã xóa!");
         takeVocabulary();
         debugShowAllWords();
+    };
+}
+
+
+function deleteAllWords() {
+    if (!confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu từ vựng? Hành động này không thể hoàn tác!")) {
+        return;
+    }
+
+    const tx = db.transaction("words", "readwrite");
+    const store = tx.objectStore("words");
+
+    const clearReq = store.clear();
+
+    clearReq.onsuccess = function () {
+        alert("Đã xóa toàn bộ dữ liệu!");
+        takeVocabulary();      // load lại danh sách học
+        debugShowAllWords();   // reload bảng debug
+    };
+
+    clearReq.onerror = function () {
+        alert("Lỗi: Không thể xóa dữ liệu!");
     };
 }
 </script>
