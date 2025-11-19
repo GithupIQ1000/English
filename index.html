@@ -378,23 +378,158 @@ function debugShowAllWords() {
     store.getAll().onsuccess = function (e) {
         const list = e.target.result;
 
-        let html = "<table border=1 cellpadding=5><tr>" +
-            "<th>Word</th><th>Type</th><th>Mean</th>" +
-            "<th>Reading</th><th>Next Read</th></tr>";
+        let html = `
+            <button onclick="showCreateForm()" style="margin-bottom:10px;">+ Tạo mới</button>
+            <table border=1 cellpadding=5 style="border-collapse:collapse">
+                <tr style="background:#eee;">
+                    <th>Word</th>
+                    <th>Type</th>
+                    <th>Mean</th>
+                    <th>Reading</th>
+                    <th>Next Read</th>
+                    <th>Action</th>
+                </tr>
+        `;
 
         list.forEach(w => {
-            html += `<tr>
-                        <td>${w.word}</td>
-                        <td>${w.type}</td>
-                        <td>${w.mean}</td>
-                        <td>${w.sum_point_reading}</td>
-                        <td>${w.next_reading_time}</td>
-                     </tr>`;
+            const rowId = `row-${w.key}`;
+
+            html += `
+                <tr id="${rowId}">
+                    <td>${w.word}</td>
+                    <td>${w.type}</td>
+                    <td>${w.mean}</td>
+                    <td>${w.sum_point_reading}</td>
+                    <td>${w.next_reading_time}</td>
+                    <td>
+                        <button onclick="editWord('${w.key}')">Sửa</button>
+                        <button onclick="deleteWord('${w.key}')">Xóa</button>
+                    </td>
+                </tr>
+            `;
         });
 
         html += "</table>";
 
         document.getElementById("debug-output").innerHTML = html;
+    };
+}
+
+function showCreateForm() {
+    const form = `
+        <div id="edit-box" style="padding:10px; border:1px solid #000; margin:10px 0;">
+            <b>Tạo mới từ</b><br><br>
+            Word: <input id="e_word"><br>
+            Type: <input id="e_type"><br>
+            Mean: <input id="e_mean"><br><br>
+            <button onclick="saveNewWord()">Lưu</button>
+            <button onclick="debugShowAllWords()">Hủy</button>
+        </div>
+    `;
+
+    document.getElementById("debug-output").insertAdjacentHTML("afterbegin", form);
+}
+
+function saveNewWord() {
+    const word = document.getElementById("e_word").value.trim();
+    const type = document.getElementById("e_type").value.trim();
+    const mean = document.getElementById("e_mean").value.trim();
+
+    if (!word || !type || !mean) return alert("Thiếu dữ liệu!");
+
+    const key = `${word}|${type}|${mean}`;
+    const todayDate = today();
+
+    const item = {
+        key,
+        word,
+        type,
+        mean,
+        sum_point_reading: 0,
+        sum_point_speaking: 0,
+        next_reading_time: todayDate,
+        next_speaking_time: todayDate
+    };
+
+    const tx = db.transaction("words", "readwrite");
+    tx.objectStore("words").add(item);
+
+    tx.oncomplete = () => {
+        alert("Đã tạo từ!");
+        takeVocabulary();
+        debugShowAllWords();
+    };
+}
+
+
+function editWord(key) {
+    const tx = db.transaction("words", "readonly");
+    const store = tx.objectStore("words");
+
+    store.get(key).onsuccess = function (e) {
+        const w = e.target.result;
+
+        const row = document.getElementById(`row-${key}`);
+
+        row.innerHTML = `
+            <td><input id="e_word" value="${w.word}"></td>
+            <td><input id="e_type" value="${w.type}"></td>
+            <td><input id="e_mean" value="${w.mean}"></td>
+            <td><input id="e_read" value="${w.sum_point_reading}"></td>
+            <td><input id="e_next" value="${w.next_reading_time}"></td>
+            <td>
+                <button onclick="saveEdit('${key}')">Lưu</button>
+                <button onclick="debugShowAllWords()">Hủy</button>
+            </td>
+        `;
+    };
+}
+
+function saveEdit(oldKey) {
+    const word = document.getElementById("e_word").value.trim();
+    const type = document.getElementById("e_type").value.trim();
+    const mean = document.getElementById("e_mean").value.trim();
+    const read = Number(document.getElementById("e_read").value);
+    const next = document.getElementById("e_next").value.trim();
+
+    const newKey = `${word}|${type}|${mean}`;
+
+    const item = {
+        key: newKey,
+        word,
+        type,
+        mean,
+        sum_point_reading: read,
+        sum_point_speaking: 0,
+        next_reading_time: next,
+        next_speaking_time: next
+    };
+
+    const tx = db.transaction("words", "readwrite");
+    const store = tx.objectStore("words");
+
+    if (newKey !== oldKey) store.delete(oldKey);
+
+    store.put(item);
+
+    tx.oncomplete = () => {
+        alert("Đã lưu!");
+        takeVocabulary();
+        debugShowAllWords();
+    };
+}
+
+
+function deleteWord(key) {
+    if (!confirm("Xóa từ này?")) return;
+
+    const tx = db.transaction("words", "readwrite");
+    tx.objectStore("words").delete(key);
+
+    tx.oncomplete = () => {
+        alert("Đã xóa!");
+        takeVocabulary();
+        debugShowAllWords();
     };
 }
 </script>
