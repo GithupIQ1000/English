@@ -371,7 +371,7 @@ function saveVocabulary() {
 /* ============================================================
    DEBUG — SHOW ALL WORDS
 ============================================================ */
-function xdebugShowAllWords() {
+function debugShowAllWords() {
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
