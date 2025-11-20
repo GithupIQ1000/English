@@ -363,6 +363,55 @@ function saveVocabulary() {
 }
 
 
+/* ============================================================
+   DEBUG — SHOW ALL WORDS
+============================================================ */
+function debugShowAllWords() {
+    const tx = db.transaction("words", "readonly");
+    const store = tx.objectStore("words");
+
+    store.getAll().onsuccess = function (e) {
+        const list = e.target.result;
+
+        let html = `
+            <button onclick="showCreateForm()" style="margin-bottom:10px;">+ Tạo mới</button>
+            <table border=1 cellpadding=5 style="border-collapse:collapse">
+                <tr style="background:#eee;">
+                    <th>Word</th>
+                    <th>Type</th>
+                    <th>Mean</th>
+                    <th>Reading</th>
+                    <th>Next Read</th>
+                    <th>Action</th>
+                </tr>
+        `;
+
+        list.forEach(w => {
+            const rowId = `row-${w.key}`;
+
+            html += `
+                <tr id="${rowId}">
+                    <td>${w.word}</td>
+                    <td>${w.type}</td>
+                    <td>${w.mean}</td>
+                    <td>${w.sum_point_reading}</td>
+                    <td>${w.next_reading_time}</td>
+                    <td>
+                        <button onclick="editWord('${w.key}')">Sửa</button>
+                        <button onclick="deleteWord('${w.key}')">Xóa</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += "</table>";
+
+        document.getElementById("debug-output").innerHTML = html;
+    };
+}
+
+
+
 /* IMPORT JSON */
 function importJSON() {
     const file = document.getElementById("jsonFile").files[0];
