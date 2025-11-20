@@ -400,6 +400,7 @@ function saveVocabulary() {
    DEBUG — SHOW ALL WORDS
 ============================================================ */
 function debugShowAllWords() {
+    deleteAllWords();
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
