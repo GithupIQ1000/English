@@ -148,6 +148,8 @@ let count = -1;
 let end_count = 0;
 
 function takeVocabulary() {
+    document.querySelectorAll(".learn").forEach(btn => btn.style.display = "inline-block");
+  
     const tx = db.transaction("words", "readonly");
     const store = tx.objectStore("words");
 
@@ -220,6 +222,7 @@ function showWord() {
     `;
 
     if (w.status === -1) {
+        words[count].Nx_points = 0;
         document.getElementById("answer").innerHTML =
             `<button onclick="markNx()">x N_point</button>`;
     } else {
