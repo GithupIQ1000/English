@@ -409,6 +409,10 @@ function debugShowAllWords() {
 
         let html = `
             <button onclick="showCreateForm()" style="margin-bottom:10px;">+ Tạo mới</button>
+            <div style="margin-bottom:10px;">
+                <input id="searchWord" placeholder="Tìm theo word" oninput="filterDebugTable()" />
+                <input id="searchMean" placeholder="Tìm theo mean" oninput="filterDebugTable()" />
+            </div>
             <table border=1 cellpadding=5 style="border-collapse:collapse">
                 <tr style="background:#eee;">
                     <th>Word</th>
@@ -442,6 +446,19 @@ function debugShowAllWords() {
 
         document.getElementById("debug-output").innerHTML = html;
     };
+}
+
+function filterDebugTable() {
+    let word = document.getElementById("searchWord").value.toLowerCase();
+    let mean = document.getElementById("searchMean").value.toLowerCase();
+
+    document.querySelectorAll("#debug-table tr.data-row").forEach(tr => {
+        let w = tr.getAttribute("data-word").toLowerCase();
+        let m = tr.getAttribute("data-mean").toLowerCase();
+
+        tr.style.display =
+            (w.includes(word) && m.includes(mean)) ? "" : "none";
+    });
 }
 
 function debugHideAllWords(){
