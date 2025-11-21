@@ -366,8 +366,6 @@ function saveVocabulary() {
 
             newDate.setDate(newDate.getDate() + Math.floor(point / 2));
         }
-        w.Nx_points = 0;
-        w.status = -1;
         
         // cập nhật vào IndexedDB
         const updated = {
@@ -385,6 +383,9 @@ function saveVocabulary() {
                 ${w.word} (${w.type}): ${w.mean}
             </div>
         `;
+        
+        w.Nx_points = 0;
+        w.status = -1;
     });
 
     tx.oncomplete = function () {
