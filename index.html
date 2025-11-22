@@ -156,10 +156,15 @@ function takeVocabulary() {
     store.getAll().onsuccess = function (e) {
         const all = e.target.result;
         const todayDate = today();
-
+                
         words = all.filter(w => todayDate >= w.next_reading_time);
-        words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);
-
+        words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);      
+        // reset toàn bộ thuộc tính
+        words.forEach(w => {
+            w.Nx_points = 0;
+            w.status = -1;
+        });
+        
         end_count = words.length;
         count = -1;
 
