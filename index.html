@@ -160,6 +160,12 @@ function takeVocabulary() {
         words = all.filter(w => todayDate >= w.next_reading_time);
         words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);      
         
+        // reset toàn bộ thuộc tính
+        words.forEach(w => {
+            w.Nx_points = 0;
+            w.status = -1;
+        });
+        
         end_count = words.length;
         count = -1;
 
@@ -383,9 +389,6 @@ function saveVocabulary() {
                 ${w.word} (${w.type}): ${w.mean}
             </div>
         `;
-        
-        w.Nx_points = 0;
-        w.status = -1;
     });
 
     tx.oncomplete = function () {
