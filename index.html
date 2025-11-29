@@ -652,7 +652,24 @@ function saveEdit(oldKey) {
     };
 }
 
+function deleteWord(key) {
+    if (!confirm("Bạn có chắc muốn xóa từ này?")) return;
 
+    const tx = db.transaction("words", "readwrite");
+    const store = tx.objectStore("words");
+
+    store.delete(key);
+
+    tx.oncomplete = function () {
+        alert("Đã xóa!");
+        takeVocabulary();      // reload danh sách học
+        debugShowAllWords();   // reload bảng debug
+    };
+
+    tx.onerror = function () {
+        alert("Không thể xóa từ!");
+    };
+}
 
 
 function deleteAllWords() {
