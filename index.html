@@ -212,7 +212,7 @@ function takeVocabulary() {
         words.sort((a, b) => a.sum_point_reading - b.sum_point_reading);      
         
         // reset toàn bộ thuộc tính
-        const n = 0;
+        let n = 0;
         words.forEach(w => {
             w.Nx_points = 0;
             w.status = -1;
