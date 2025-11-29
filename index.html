@@ -5,6 +5,57 @@
   <title>Vocabulary Offline</title>
 </head>
 <body>
+<style>
+  /* Container bo tròn, căn giữa */
+  .debug-container {
+      padding: 10px;
+      font-size: 18px;
+  }
+
+  /* Ô tìm kiếm */
+  .search-box {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 18px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+  }
+
+  /* Nút lớn */
+  .big-btn {
+      width: 100%;
+      padding: 14px;
+      margin: 8px 0;
+      font-size: 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+  }
+
+  /* Bảng responsive */
+  .table-wrapper {
+      overflow-x: auto;
+  }
+
+  table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 17px;
+  }
+
+  th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+  }
+
+  th {
+      background: #f3f3f3;
+  }
+
+</style>
 
 <h3>Upload JSON dữ liệu từ MySQL</h3>
 <input type="file" id="jsonFile" accept=".json">
@@ -422,7 +473,7 @@ function debugShowAllWords() {
                 <input id="searchWord" placeholder="Tìm theo word" oninput="filterDebugTable()" />
                 <input id="searchMean" placeholder="Tìm theo mean" oninput="filterDebugTable()" />
             </div>
-            <table border=1 cellpadding=5 style="border-collapse:collapse">
+              <table id="debug-table" border=1 cellpadding=5 style="border-collapse:collapse">
                 <tr style="background:#eee;">
                     <th>Word</th>
                     <th>Type</th>
@@ -437,7 +488,9 @@ function debugShowAllWords() {
             const rowId = `row-${w.key}`;
 
             html += `
-                <tr id="${rowId}">
+                <tr id="${rowId}" class="data-row" 
+                    data-word="${w.word}" 
+                    data-mean="${w.mean}">
                     <td>${w.word}</td>
                     <td>${w.type}</td>
                     <td>${w.mean}</td>
