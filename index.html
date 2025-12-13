@@ -60,6 +60,7 @@
 <h3>Upload JSON dữ liệu từ MySQL</h3>
 <input type="file" id="jsonFile" accept=".json">
 <button onclick="importJSON()">Nhập dữ liệu</button>
+<button onclick="exportWordsToJSON()">📦 Xuất file JSON</button>
 <button onclick="debugShowAllWords()">Show dữ liệu</button>
 <button onclick="debugHideAllWords()">Hide dữ liệu</button>
 
@@ -191,6 +192,51 @@ function saveWordsToIndexedDB(words) {
 }
 
 
+/* ============================================================
+   XUẤT DỮ LIỆU TỪ INDEXEDDB RA FILE JSON
+============================================================ */
+function exportWordsToJSON() {
+    const tx = db.transaction("words", "readonly");
+    const store = tx.objectStore("words");
+
+    const request = store.getAll();
+
+    request.onsuccess = function (e) {
+        const all = e.target.result;
+
+        if (!all || all.length === 0) {
+            alert("Không có dữ liệu để xuất!");
+            return;
+        }
+
+        // Chỉ lấy các trường cần thiết
+        const exportData = all.map(w => ({
+            word: w.word,
+            type: w.type,
+            mean: w.mean,
+            sum_point_reading: w.sum_point_reading,
+            next_reading_time: w.next_reading_time
+        }));
+
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `words_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    };
+
+    request.onerror = function () {
+        alert("Lỗi khi xuất dữ liệu!");
+    };
+}
+
+
+  
 /* ============================================================
    LOAD WORD HÔM NAY
 ============================================================ */
