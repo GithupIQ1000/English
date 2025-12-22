@@ -469,12 +469,12 @@ function saveVocabulary() {
         if (w.status !== 0 && w.status !== 1) return;
 
         let point = Number(w.sum_point_reading);
-        let Nx = 1.7;
+        let Nx = 1.5;
         let newDate = new Date(todayDate);
 
         if (w.status === 1) {
             // đúng → tăng điểm
-            let bonus = 1.5 + Math.round(point / 5.9 * 100) / 100;
+            let bonus = 1.3 + Math.round(point / 5.9 * 100) / 100;
             point += bonus;
 
             if (w.Nx_points) {
