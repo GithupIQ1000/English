@@ -165,32 +165,55 @@ function saveWordsToIndexedDB(words) {
     const tx = db.transaction("words", "readwrite");
     const store = tx.objectStore("words");
 
-    let count = 0;
+    let countUpdate = 0;
+    let countInsert = 0;
 
     words.forEach(w => {
+        if (w.host !== "Long") return; // bỏ qua nếu không phải host Long
+
         const key = `${w.word}|${w.type}|${w.mean}`;
-        if (w.host != "Long") return;
+        const getReq = store.get(key);
 
-        store.put({
-            key: key,
-            word: w.word,
-            type: w.type,
-            mean: w.mean,
-            sum_point_reading: Number(w.sum_point_reading || 0),
-            sum_point_speaking: Number(w.sum_point_speaking || 0),
-            next_reading_time: w.next_reading_time,
-            next_speaking_time: w.next_speaking_time
-        });
+        getReq.onsuccess = function (e) {
+            const existing = e.target.result;
 
-        count++;
+            if (existing) {
+                // 🔹 Nếu key đã tồn tại → cập nhật sum_point_reading / speaking
+                existing.sum_point_reading = Number(w.sum_point_reading || existing.sum_point_reading || 0);
+                existing.sum_point_speaking = Number(w.sum_point_speaking || existing.sum_point_speaking || 0);
+                existing.next_reading_time = w.next_reading_time || existing.next_reading_time;
+                existing.next_speaking_time = w.next_speaking_time || existing.next_speaking_time;
+
+                store.put(existing);
+                countUpdate++;
+            } else {
+                // 🔹 Nếu chưa có → thêm mới
+                const item = {
+                    key,
+                    word: w.word,
+                    type: w.type,
+                    mean: w.mean,
+                    sum_point_reading: Number(w.sum_point_reading || 0),
+                    sum_point_speaking: Number(w.sum_point_speaking || 0),
+                    next_reading_time: w.next_reading_time,
+                    next_speaking_time: w.next_speaking_time
+                };
+                store.add(item);
+                countInsert++;
+            }
+        };
     });
 
     tx.oncomplete = () => {
         document.getElementById("import-result").innerText =
-            `Đã nhập ${count} từ thành công!`;
+            `Cập nhật ${countUpdate} từ, thêm mới ${countInsert} từ thành công!`;
+    };
+
+    tx.onerror = (e) => {
+        console.error("Lỗi khi import IndexedDB:", e.target.error);
+        alert("Lỗi khi lưu vào IndexedDB!");
     };
 }
-
 
 /* ============================================================
    XUẤT DỮ LIỆU TỪ INDEXEDDB RA FILE JSON
