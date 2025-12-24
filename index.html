@@ -162,6 +162,10 @@ function importJSON() {
    LƯU DỮ LIỆU JSON VÀO INDEXEDDB
 ============================================================ */
 function saveWordsToIndexedDB(words) {
+  
+    exportWordsToJSON();
+    deleteAllWords();
+
     const tx = db.transaction("words", "readwrite");
     const store = tx.objectStore("words");
 
